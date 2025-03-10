@@ -66,6 +66,27 @@ Este projeto faz parte da atividade da Compass UOL. A proposta consiste em confi
    - AmazonElasticFileSystemFullAccess.
    - AmazonSSMManagedInstanceCore.
 
+- Adicione o Script user_data:
+
+  ```
+  #!/bin/bash
+  sudo apt-get update -y && sudo apt-get upgrade -y
+  sudo apt-get install -y docker.io curl
+  sudo systemctl enable --now docker
+  DOCKER_COMPOSE_VERSION="2.20.2"
+  DOCKER_COMPOSE_URL="https://github.com/docker/compose/releases/download/v${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)"
+  sudo curl -L "$DOCKER_COMPOSE_URL" -o /usr/local/bin/docker-compose
+  sudo chmod +x /usr/local/bin/docker-compose
+  USER_NAME=$(whoami)
+  sudo usermod -aG docker "$USER_NAME"
+  if systemctl is-active --quiet docker; then
+    echo "Docker está rodando com sucesso!"
+  else
+    echo "Erro ao iniciar o Docker."
+    exit 1
+  fi
+  ```
+
 ## 7 - Criar o Auto Scaling Group
 
 - Min: 2 instâncias, Max: 2 (ou mais, se preferir).
