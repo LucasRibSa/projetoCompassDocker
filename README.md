@@ -129,4 +129,4 @@ sudo docker-compose up -d
 
 - Teste a aplicação usando o DNS do Classic Load Balancer no navegador: http://loadbalancer-xxxxx.us-east-1.elb.amazonaws.com.
 - Complete a instalação do WordPress.
-- Faça o upload de uma imagem no WordPress e verifique se ela foi salva corretamente no EFS.
+
