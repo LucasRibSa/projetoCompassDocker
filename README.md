@@ -36,7 +36,7 @@ Este projeto faz parte da atividade da Compass UOL. A proposta consiste em confi
 - Security Group: Permitir acesso à porta 3306 apenas das instâncias EC2.
 
   ```
-  mysql -h <seu endpoint> -u admin -2803Psfac.
+  mysql -h <seu endpoint> -u admin -psenha
   CREATE DATABASE wordpress;
   ```
   
