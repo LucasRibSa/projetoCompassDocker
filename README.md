@@ -25,7 +25,7 @@ Este projeto faz parte da atividade da Compass UOL. A proposta consiste em confi
 | Componente | SG Nome | Inbound | Outbound |
 |------------|--------|---------|----------|
 | Classic Load Balancer |  wp-lb-sg  |  HTTP 80 (0.0.0.0/0) | HTTP 80 (wp-ec2-sg) |
-| EC2 Instances (ASG) |	wp-ec2-sg |	HTTP 80 (wp-lb-sg), NFS 2049 (wp-ec2-sg) |	MYSQL/Aurora 3306 (wp-rds-sg), NFS 2049 (wp-efs-sg), HTTPS 443 (0.0.0.0/0) |
+| EC2 Instances (ASG) |	wp-ec2-sg |	HTTP 80 (wp-lb-sg), NFS 2049 (wp-ec2-sg) |	NFS 2049 (wp-efs-sg) |
 | RDS MySQL	| wp-rds-sg |	MYSQL/Aurora 3306 (wp-ec2-sg)| 	Todos (0.0.0.0/0) |
 | EFS	| wp-efs-sg |	TCP 2049 (wp-ec2-sg) |	Todos (0.0.0.0/0) |
 
