@@ -90,10 +90,10 @@ yum install -y amazon-efs-utils
 mkdir -p /mnt/efs
 
 # Montar o EFS manualmente
-mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport fs-xxxxxxxxxxx.efs.us-east-1.amazonaws.com:/ /mnt/efs
+mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport fs-xxxxxxxxxxxxxxxxx.efs.us-east-1.amazonaws.com:/ /mnt/efs
 
 # Adicionar montagem automática no /etc/fstab
-echo "fs-xxxxxxxxxx.efs.us-east-1.amazonaws.com:/ /mnt/efs nfs4 defaults,_netdev 0 0" | sudo tee -a /etc/fstab
+echo "fs-xxxxxxxxxxxxxxxxx.efs.us-east-1.amazonaws.com:/ /mnt/efs nfs4 defaults,_netdev 0 0" | sudo tee -a /etc/fstab
 
 # Criar docker-compose.yml no EFS (se ainda não existir)
 if [ ! -f /mnt/efs/docker-compose.yml ]; then
@@ -105,8 +105,8 @@ services:
     ports:
       - "80:80"
     environment:
-      WORDPRESS_DB_HOST: database-1.xxxxxxxxxxxx.regiao.rds.amazonaws.com
-      WORDPRESS_DB_USER: admin
+      WORDPRESS_DB_HOST: database-1.xxxxxxxxxxxx.us-east-1.rds.amazonaws.com
+      WORDPRESS_DB_USER: seulogin
       WORDPRESS_DB_PASSWORD: suasenha
       WORDPRESS_DB_NAME: wordpress
     volumes:
@@ -114,18 +114,82 @@ services:
 EOF
 fi
 
-# Iniciar o WordPress
-cd /mnt/efs
-sudo docker-compose up -d
+# Criar o serviço systemd para rodar o docker-compose
+cat <<EOF > /etc/systemd/system/wordpress.service
+[Unit]
+Description=WordPress Docker Service
+Requires=docker.service
+After=docker.service
+
+[Service]
+Restart=always
+WorkingDirectory=/mnt/efs
+ExecStart=/usr/local/bin/docker-compose up -d
+ExecStop=/usr/local/bin/docker-compose down
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Recarregar systemd, habilitar e iniciar o serviço
+systemctl daemon-reload
+systemctl enable wordpress.service
+systemctl start wordpress.service
+
 ```
 
 ## 7 - Criar o Auto Scaling Group
 
-- Min: 2 instâncias, Max: 2 (ou mais, se preferir).
+- Min: 2 instâncias, Max: 4 (ou mais, se preferir).
 - Sub-redes: As 2 sub-redes privadas.
 - Associe o Auto Scaling Group ao Classic Load Balancer.
 
-## 8 - Testar as funcionalidades
+## 8 - Adicionando o monitoramento com o CloudWatch
+
+> Ainda dentro do ASG, crie 2 políticas de escalabilidade dinâmica:
+- Regra 1:
+- Tipo de política: Escalabilidade simples
+- Nome: ScaleOut
+- Executar a ação: Adicionar 1 unidade de capacidade
+- E então aguardar: 120s
+- Regra 2:
+- Tipo de política: Escalabilidade simples
+- Nome: ScaleIn
+- Executar a ação:  Remover 1 unidade de capacidade
+- E então aguardar: 300s
+
+## 8.1 - Criando alarmes no CloudWatch:
+
+- Na aba de CloudWatch selecione Alarms
+- Clique em create alarm
+  
+  >Alarme 1
+  
+- Selecionar métricas: ELB -> Seu classic load balancer -> RequestCount
+- Nome da métrica: RequestCount-ScaleOut
+- Período: 1 minuto
+- Tipo de limite: Estático
+- Sempre que RequestCount for...: ≥ 200
+- adicionar Ação do Auto Scaling
+- Selecione um grupo: seu ASG
+- Selecione a ação que criou anteriormente dentro do ASG: ScaleOut
+- Adicione um nome e descrição e aperte para criar
+
+>Alarme 2
+
+- Selecionar métricas: ELB -> Seu classic load balancer -> RequestCount
+- Nome da métrica: RequestCount-Scalein
+- Período: 1 minuto
+- Tipo de limite: Estático
+- Sempre que RequestCount for...: ≤ 300
+- adicionar Ação do Auto Scaling
+- Selecione um grupo: seu ASG
+- Selecione a ação que criou anteriormente dentro do ASG: ScaleIn
+- Adicione um nome e descrição e aperte para criar
+
+
+## 9 - Testar as funcionalidades
 
 - Teste a aplicação usando o DNS do Classic Load Balancer no navegador: http://loadbalancer-xxxxx.us-east-1.elb.amazonaws.com.
 - Complete a instalação do WordPress.
